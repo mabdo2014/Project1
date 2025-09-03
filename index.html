@@ -2,99 +2,136 @@
 <html lang="ar">
 <head>
   <meta charset="UTF-8">
-  <title>تسجيل الدخول - نموذج الزيارة</title>
+  <title>نموذج الزيارة الميدانية</title>
+  <script type="module">
+    // استيراد المكتبات من Firebase
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
+    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
+
+    // إعدادات Firebase الخاصة بك
+    const firebaseConfig = {
+      apiKey: "AIzaSyABW-Hd16NmB31Vej3iERUilF-vHPGAoPo",
+      authDomain: "project1-78802.firebaseapp.com",
+      projectId: "project1-78802",
+      storageBucket: "project1-78802.firebasestorage.app",
+      messagingSenderId: "445590965407",
+      appId: "1:445590965407:web:ba55989cdbb3b63a5fe6aa",
+      measurementId: "G-4V4K1L5135"
+    };
+
+    // تهيئة التطبيق وقاعدة البيانات
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // التعامل مع النموذج
+    window.addEventListener('DOMContentLoaded', () => {
+      const form = document.getElementById('visitForm');
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        // قراءة القيم من الحقول
+        const engineer = document.getElementById('engineer').value;
+        const client = document.getElementById('client').value;
+        const deviceName = document.getElementById('deviceName').value;
+        const serialNumber = document.getElementById('serialNumber').value;
+        const licenseInfo = document.getElementById('licenseInfo').value;
+        const licenseExpiry = document.getElementById('licenseExpiry').value;
+
+        try {
+          // إرسال البيانات إلى Firestore
+          await addDoc(collection(db, "visits"), {
+            engineer,
+            client,
+            deviceName,
+            serialNumber,
+            licenseInfo,
+            licenseExpiry,
+            timestamp: new Date()
+          });
+
+          alert("تم حفظ البيانات بنجاح!");
+          form.reset();
+        } catch (error) {
+          alert("حدث خطأ أثناء الحفظ: " + error.message);
+        }
+      });
+    });
+  </script>
+
   <style>
     body {
-      font-family: Arial, sans-serif;
       direction: rtl;
+      font-family: Arial;
       background: #f0f0f0;
-      padding: 50px;
-    }
-    .login-box, .form-box {
-      max-width: 500px;
-      margin: auto;
       padding: 20px;
-      background: white;
-      border-radius: 10px;
-      box-shadow: 0 0 10px #ccc;
     }
+
     h2 {
       text-align: center;
     }
-    input {
-      width: 100%;
-      padding: 10px;
-      margin-top: 10px;
-      margin-bottom: 20px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
+
+    form {
+      max-width: 600px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px #ccc;
     }
-    button {
+
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+
+    input, textarea {
       width: 100%;
       padding: 10px;
-      background-color: #2196F3;
+      margin-top: 5px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+
+    button {
+      margin-top: 20px;
+      padding: 10px;
+      width: 100%;
+      background: #2196F3;
       color: white;
       border: none;
       border-radius: 5px;
       font-size: 16px;
     }
-    .hidden {
-      display: none;
-    }
-    .error {
-      color: red;
-      text-align: center;
-    }
   </style>
 </head>
 <body>
 
-  <!-- شاشة تسجيل الدخول -->
-  <div class="login-box" id="loginBox">
-    <h2>تسجيل الدخول</h2>
-    <input type="text" id="username" placeholder="اسم المستخدم">
-    <input type="password" id="password" placeholder="كلمة المرور">
-    <button onclick="login()">دخول</button>
-    <p class="error" id="errorMsg"></p>
-  </div>
+  <h2>نموذج الزيارة الميدانية</h2>
 
-  <!-- النموذج الرئيسي (مخفي بالبداية) -->
-  <div class="form-box hidden" id="formBox">
-    <h2>نموذج الزيارة الميدانية</h2>
-    <form>
-      <label>اسم المهندس:</label>
-      <input type="text" required>
-      <label>اسم العميل:</label>
-      <input type="text" required>
-      <label>اسم الجهاز:</label>
-      <input type="text" required>
-      <label>الرقم التسلسلي:</label>
-      <input type="text" required>
-      <label>معلومات الترخيص:</label>
-      <input type="text" required>
-      <label>تاريخ انتهاء الترخيص:</label>
-      <input type="date" required>
-      <button type="submit">إرسال</button>
-    </form>
-  </div>
+  <form id="visitForm">
+    <label for="engineer">اسم المهندس:</label>
+    <input type="text" id="engineer" required>
 
-  <script>
-    const USER = "admin";
-    const PASS = "1234";
+    <label for="client">اسم العميل:</label>
+    <input type="text" id="client" required>
 
-    function login() {
-      const username = document.getElementById("username").value;
-      const password = document.getElementById("password").value;
-      const errorMsg = document.getElementById("errorMsg");
+    <label for="deviceName">اسم الجهاز:</label>
+    <input type="text" id="deviceName" required>
 
-      if (username === USER && password === PASS) {
-        document.getElementById("loginBox").classList.add("hidden");
-        document.getElementById("formBox").classList.remove("hidden");
-      } else {
-        errorMsg.textContent = "اسم المستخدم أو كلمة المرور غير صحيحة.";
-      }
-    }
-  </script>
+    <label for="serialNumber">الرقم التسلسلي:</label>
+    <input type="text" id="serialNumber" required>
+
+    <label for="licenseInfo">معلومات الترخيص:</label>
+    <textarea id="licenseInfo" required></textarea>
+
+    <label for="licenseExpiry">تاريخ انتهاء الترخيص:</label>
+    <input type="date" id="licenseExpiry" required>
+
+    <button type="submit">إرسال</button>
+  </form>
 
 </body>
 </html>
