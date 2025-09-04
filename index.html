@@ -3,12 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <title>نموذج الزيارة الميدانية</title>
-  <script type="module">
-    // استيراد المكتبات من Firebase
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
-    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
 
-    // إعدادات Firebase الخاصة بك
+  <!-- مكتبة SheetJS للتعامل مع Excel -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+  <script type="module">
+    // استيراد مكتبات Firebase
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
+
+    // إعدادات Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyABW-Hd16NmB31Vej3iERUilF-vHPGAoPo",
       authDomain: "project1-78802.firebaseapp.com",
@@ -19,18 +23,17 @@
       measurementId: "G-4V4K1L5135"
     };
 
-    // تهيئة التطبيق وقاعدة البيانات
+    // تهيئة Firebase
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // التعامل مع النموذج
+    // إرسال البيانات من النموذج إلى Firestore
     window.addEventListener('DOMContentLoaded', () => {
       const form = document.getElementById('visitForm');
 
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        // قراءة القيم من الحقول
         const engineer = document.getElementById('engineer').value;
         const client = document.getElementById('client').value;
         const deviceName = document.getElementById('deviceName').value;
@@ -39,7 +42,6 @@
         const licenseExpiry = document.getElementById('licenseExpiry').value;
 
         try {
-          // إرسال البيانات إلى Firestore
           await addDoc(collection(db, "visits"), {
             engineer,
             client,
@@ -57,6 +59,67 @@
         }
       });
     });
+
+    // استيراد البيانات من ملف Excel إلى Firestore
+    window.handleImport = async function () {
+      const fileInput = document.getElementById("importFile");
+      if (!fileInput.files.length) return alert("يرجى اختيار ملف");
+
+      const file = fileInput.files[0];
+      const reader = new FileReader();
+
+      reader.onload = async function (e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: "array" });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const jsonData = XLSX.utils.sheet_to_json(sheet);
+
+        try {
+          for (const row of jsonData) {
+            await addDoc(collection(db, "visits"), {
+              engineer: row["اسم المهندس"] || "",
+              client: row["اسم العميل"] || "",
+              deviceName: row["اسم الجهاز"] || "",
+              serialNumber: row["الرقم التسلسلي"] || "",
+              licenseInfo: row["معلومات الترخيص"] || "",
+              licenseExpiry: row["تاريخ انتهاء الترخيص"] || "",
+              timestamp: new Date()
+            });
+          }
+          alert("تم استيراد البيانات بنجاح!");
+        } catch (error) {
+          alert("حدث خطأ أثناء الاستيراد: " + error.message);
+        }
+      };
+
+      reader.readAsArrayBuffer(file);
+    }
+
+    // تصدير البيانات من Firestore إلى Excel
+    window.exportToExcel = async function () {
+      try {
+        const snapshot = await getDocs(collection(db, "visits"));
+        const data = snapshot.docs.map(doc => doc.data());
+
+        const formattedData = data.map(entry => ({
+          "اسم المهندس": entry.engineer,
+          "اسم العميل": entry.client,
+          "اسم الجهاز": entry.deviceName,
+          "الرقم التسلسلي": entry.serialNumber,
+          "معلومات الترخيص": entry.licenseInfo,
+          "تاريخ انتهاء الترخيص": entry.licenseExpiry
+        }));
+
+        const worksheet = XLSX.utils.json_to_sheet(formattedData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "الزيارات");
+
+        XLSX.writeFile(workbook, "الزيارات.xlsx");
+      } catch (error) {
+        alert("حدث خطأ أثناء التصدير: " + error.message);
+      }
+    }
+
   </script>
 
   <style>
@@ -104,6 +167,21 @@
       border: none;
       border-radius: 5px;
       font-size: 16px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #1976D2;
+    }
+
+    .actions {
+      max-width: 600px;
+      margin: 30px auto;
+      text-align: center;
+    }
+
+    .actions input {
+      margin: 10px 0;
     }
   </style>
 </head>
@@ -132,6 +210,17 @@
 
     <button type="submit">إرسال</button>
   </form>
+
+  <div class="actions">
+    <hr>
+    <label for="importFile">استيراد ملف Excel:</label><br>
+    <input type="file" id="importFile" accept=".xlsx, .xls, .csv">
+    <button onclick="handleImport()">استيراد</button>
+
+    <br><br>
+
+    <button onclick="exportToExcel()">تصدير البيانات إلى Excel</button>
+  </div>
 
 </body>
 </html>
