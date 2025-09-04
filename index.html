@@ -4,15 +4,14 @@
   <meta charset="UTF-8">
   <title>نموذج الزيارة الميدانية</title>
 
-  <!-- مكتبة SheetJS للتعامل مع Excel -->
+  <!-- مكتبة Excel (SheetJS) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
+  <!-- سكربت Firebase + التصدير والاستيراد -->
   <script type="module">
-    // استيراد مكتبات Firebase
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
     import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
 
-    // إعدادات Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyABW-Hd16NmB31Vej3iERUilF-vHPGAoPo",
       authDomain: "project1-78802.firebaseapp.com",
@@ -23,45 +22,10 @@
       measurementId: "G-4V4K1L5135"
     };
 
-    // تهيئة Firebase
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // إرسال البيانات من النموذج إلى Firestore
-    window.addEventListener('DOMContentLoaded', () => {
-      const form = document.getElementById('visitForm');
-
-      form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        const engineer = document.getElementById('engineer').value;
-        const client = document.getElementById('client').value;
-        const deviceName = document.getElementById('deviceName').value;
-        const serialNumber = document.getElementById('serialNumber').value;
-        const licenseInfo = document.getElementById('licenseInfo').value;
-        const licenseExpiry = document.getElementById('licenseExpiry').value;
-
-        try {
-          await addDoc(collection(db, "visits"), {
-            engineer,
-            client,
-            deviceName,
-            serialNumber,
-            licenseInfo,
-            licenseExpiry,
-            timestamp: new Date()
-          });
-
-          alert("تم حفظ البيانات بنجاح!");
-          form.reset();
-        } catch (error) {
-          alert("حدث خطأ أثناء الحفظ: " + error.message);
-        }
-      });
-    });
-
-    // استيراد البيانات من ملف Excel إلى Firestore
-    window.handleImport = async function () {
+    async function handleImport() {
       const fileInput = document.getElementById("importFile");
       if (!fileInput.files.length) return alert("يرجى اختيار ملف");
 
@@ -95,8 +59,7 @@
       reader.readAsArrayBuffer(file);
     }
 
-    // تصدير البيانات من Firestore إلى Excel
-    window.exportToExcel = async function () {
+    async function exportToExcel() {
       try {
         const snapshot = await getDocs(collection(db, "visits"));
         const data = snapshot.docs.map(doc => doc.data());
@@ -120,6 +83,42 @@
       }
     }
 
+    window.addEventListener('DOMContentLoaded', () => {
+      const form = document.getElementById('visitForm');
+      const importButton = document.getElementById('importButton');
+      const exportButton = document.getElementById('exportButton');
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const engineer = document.getElementById('engineer').value;
+        const client = document.getElementById('client').value;
+        const deviceName = document.getElementById('deviceName').value;
+        const serialNumber = document.getElementById('serialNumber').value;
+        const licenseInfo = document.getElementById('licenseInfo').value;
+        const licenseExpiry = document.getElementById('licenseExpiry').value;
+
+        try {
+          await addDoc(collection(db, "visits"), {
+            engineer,
+            client,
+            deviceName,
+            serialNumber,
+            licenseInfo,
+            licenseExpiry,
+            timestamp: new Date()
+          });
+
+          alert("تم حفظ البيانات بنجاح!");
+          form.reset();
+        } catch (error) {
+          alert("حدث خطأ أثناء الحفظ: " + error.message);
+        }
+      });
+
+      importButton.addEventListener("click", handleImport);
+      exportButton.addEventListener("click", exportToExcel);
+    });
   </script>
 
   <style>
@@ -180,8 +179,16 @@
       text-align: center;
     }
 
-    .actions input {
-      margin: 10px 0;
+    .actions input[type="file"] {
+      margin-top: 15px;
+      display: block;
+      width: 100%;
+    }
+
+    .actions button {
+      width: 48%;
+      display: inline-block;
+      margin: 10px 1%;
     }
   </style>
 </head>
@@ -213,13 +220,10 @@
 
   <div class="actions">
     <hr>
-    <label for="importFile">استيراد ملف Excel:</label><br>
+    <label for="importFile">استيراد ملف Excel:</label>
     <input type="file" id="importFile" accept=".xlsx, .xls, .csv">
-    <button onclick="handleImport()">استيراد</button>
-
-    <br><br>
-
-    <button onclick="exportToExcel()">تصدير البيانات إلى Excel</button>
+    <button id="importButton">استيراد</button>
+    <button id="exportButton">تصدير البيانات إلى Excel</button>
   </div>
 
 </body>
